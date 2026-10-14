@@ -1,0 +1,719 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>HostelHub Management</title>
+
+<style>
+
+* {
+
+  box-sizing: border-box;
+
+}
+
+body {
+
+  margin: 0;
+
+  font-family: Arial, sans-serif;
+
+  background: #f1f5f9;
+
+  color: #172033;
+
+}
+
+header {
+
+  background: #102b50;
+
+  color: white;
+
+  padding: 24px 16px;
+
+  text-align: center;
+
+}
+
+header h1 {
+
+  margin: 0 0 8px;
+
+}
+
+header p {
+
+  margin: 0;
+
+  color: #dbeafe;
+
+}
+
+.container {
+
+  max-width: 850px;
+
+  margin: 22px auto;
+
+  padding: 0 14px;
+
+}
+
+.card {
+
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 18px;
+
+  margin-bottom: 18px;
+
+  box-shadow: 0 3px 12px #0000000d;
+
+}
+
+h2 {
+
+  margin-top: 0;
+
+  font-size: 20px;
+
+}
+
+input, button {
+
+  width: 100%;
+
+  padding: 13px;
+
+  margin: 6px 0;
+
+  border-radius: 8px;
+
+  font-size: 16px;
+
+}
+
+input {
+
+  border: 1px solid #cbd5e1;
+
+}
+
+button {
+
+  border: none;
+
+  background: #1765c0;
+
+  color: white;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+}
+
+button:hover {
+
+  opacity: 0.9;
+
+}
+
+.stats {
+
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 10px;
+
+  margin-bottom: 18px;
+
+}
+
+.stat {
+
+  background: white;
+
+  border-radius: 12px;
+
+  padding: 16px 8px;
+
+  text-align: center;
+
+  box-shadow: 0 3px 12px #0000000d;
+
+}
+
+.stat strong {
+
+  display: block;
+
+  color: #1765c0;
+
+  font-size: 25px;
+
+  margin-bottom: 6px;
+
+}
+
+.resident {
+
+  border: 1px solid #e2e8f0;
+
+  padding: 13px;
+
+  border-radius: 10px;
+
+  margin-top: 10px;
+
+}
+
+.resident-name {
+
+  font-weight: bold;
+
+  font-size: 17px;
+
+}
+
+.small {
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  margin: 5px 0 10px;
+
+}
+
+.attended {
+
+  background: #15803d;
+
+}
+
+.delete {
+
+  background: #b91c1c;
+
+}
+
+.secondary {
+
+  background: #475569;
+
+}
+
+.empty {
+
+  color: #64748b;
+
+  text-align: center;
+
+  padding: 18px;
+
+}
+
+.notice {
+
+  font-size: 13px;
+
+  color: #64748b;
+
+  line-height: 1.5;
+
+}
+
+@media (max-width: 480px) {
+
+  .stats {
+
+    gap: 6px;
+
+  }
+
+  .stat {
+
+    font-size: 12px;
+
+    padding: 13px 4px;
+
+  }
+
+  .stat strong {
+
+    font-size: 21px;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+  <h1>HostelHub</h1>
+
+  <p>Hostel Registration & Attendance Management</p>
+
+</header>
+
+<main class="container">
+
+  <section class="stats">
+
+    <div class="stat">
+
+      <strong id="totalResidents">0</strong>
+
+      Residents
+
+    </div>
+
+    <div class="stat">
+
+      <strong id="presentToday">0</strong>
+
+      Present Today
+
+    </div>
+
+    <div class="stat">
+
+      <strong id="absentToday">0</strong>
+
+      Not Checked In
+
+    </div>
+
+  </section>
+
+  <section class="card">
+
+    <h2>Register a Resident</h2>
+
+    <form id="residentForm">
+
+      <input id="residentName"
+
+             type="text"
+
+             placeholder="Full name"
+
+             required>
+
+      <input id="roomNumber"
+
+             type="text"
+
+             placeholder="Room number"
+
+             required>
+
+      <button type="submit">Register Resident</button>
+
+    </form>
+
+  </section>
+
+  <section class="card">
+
+    <h2>Attendance Register</h2>
+
+    <input id="search"
+
+           type="search"
+
+           placeholder="Search by name or room number">
+
+    <p class="small" id="todayLabel"></p>
+
+    <div id="residentList"></div>
+
+    <button class="secondary" id="exportButton">
+
+      Export Records as CSV
+
+    </button>
+
+  </section>
+
+  <section class="card">
+
+    <h2>Data Management</h2>
+
+    <p class="notice">
+
+      Records are saved in this browser on this device.
+
+      They are not automatically shared with other phones.
+
+      Export a backup regularly.
+
+    </p>
+
+    <button class="delete" id="clearButton">
+
+      Clear All Records
+
+    </button>
+
+  </section>
+
+</main>
+
+<script>
+
+const STORAGE_KEY = "hostelhub_standalone_v1";
+
+let residents = [];
+
+try {
+
+  residents = JSON.parse(
+
+    localStorage.getItem(STORAGE_KEY) || "[]"
+
+  );
+
+  if (!Array.isArray(residents)) residents = [];
+
+} catch {
+
+  residents = [];
+
+}
+
+const form = document.getElementById("residentForm");
+
+const list = document.getElementById("residentList");
+
+const search = document.getElementById("search");
+
+function today() {
+
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+
+}
+
+document.getElementById("todayLabel").textContent =
+
+  "Date: " + today();
+
+function save() {
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(residents));
+
+  render();
+
+}
+
+function render() {
+
+  const date = today();
+
+  const present = residents.filter(
+
+    person => person.attendanceDate === date
+
+  ).length;
+
+  document.getElementById("totalResidents").textContent =
+
+    residents.length;
+
+  document.getElementById("presentToday").textContent = present;
+
+  document.getElementById("absentToday").textContent =
+
+    residents.length - present;
+
+  const query = search.value.trim().toLowerCase();
+
+  const filtered = residents.filter(person =>
+
+    person.name.toLowerCase().includes(query) ||
+
+    person.room.toLowerCase().includes(query)
+
+  );
+
+  list.replaceChildren();
+
+  if (filtered.length === 0) {
+
+    const empty = document.createElement("p");
+
+    empty.className = "empty";
+
+    empty.textContent = residents.length
+
+      ? "No matching residents found."
+
+      : "No residents registered yet.";
+
+    list.appendChild(empty);
+
+    return;
+
+  }
+
+  filtered.forEach(person => {
+
+    const isPresent = person.attendanceDate === date;
+
+    const card = document.createElement("div");
+
+    card.className = "resident";
+
+    const name = document.createElement("div");
+
+    name.className = "resident-name";
+
+    name.textContent = person.name;
+
+    const room = document.createElement("p");
+
+    room.className = "small";
+
+    room.textContent = "Room: " + person.room;
+
+    const status = document.createElement("p");
+
+    status.className = "small";
+
+    status.textContent = isPresent
+
+      ? "Status: Present today"
+
+      : "Status: Not checked in today";
+
+    const attendanceButton = document.createElement("button");
+
+    attendanceButton.className = isPresent
+
+      ? "attended"
+
+      : "";
+
+    attendanceButton.textContent = isPresent
+
+      ? "Undo Today's Attendance"
+
+      : "Mark Present";
+
+    attendanceButton.addEventListener("click", () => {
+
+      if (person.attendanceDate === today()) {
+
+        person.attendanceDate = null;
+
+      } else {
+
+        person.attendanceDate = today();
+
+      }
+
+      save();
+
+    });
+
+    const deleteButton = document.createElement("button");
+
+    deleteButton.className = "delete";
+
+    deleteButton.textContent = "Remove Resident";
+
+    deleteButton.addEventListener("click", () => {
+
+      if (confirm("Remove " + person.name + " from the register?")) {
+
+        residents = residents.filter(
+
+          item => item.id !== person.id
+
+        );
+
+        save();
+
+      }
+
+    });
+
+    card.append(
+
+      name,
+
+      room,
+
+      status,
+
+      attendanceButton,
+
+      deleteButton
+
+    );
+
+    list.appendChild(card);
+
+  });
+
+}
+
+form.addEventListener("submit", event => {
+
+  event.preventDefault();
+
+  const name = document.getElementById("residentName")
+
+    .value.trim();
+
+  const room = document.getElementById("roomNumber")
+
+    .value.trim();
+
+  if (!name || !room) {
+
+    alert("Please enter the resident's name and room number.");
+
+    return;
+
+  }
+
+  const duplicate = residents.some(person =>
+
+    person.name.toLowerCase() === name.toLowerCase() &&
+
+    person.room.toLowerCase() === room.toLowerCase()
+
+  );
+
+  if (duplicate) {
+
+    alert("This resident is already registered in that room.");
+
+    return;
+
+  }
+
+  residents.push({
+
+    id: Date.now().toString() + Math.random().toString(16).slice(2),
+
+    name,
+
+    room,
+
+    attendanceDate: null
+
+  });
+
+  save();
+
+  form.reset();
+
+  alert("Resident registered successfully.");
+
+});
+
+search.addEventListener("input", render);
+
+document.getElementById("exportButton")
+
+  .addEventListener("click", () => {
+
+    const rows = [
+
+      ["Full Name", "Room Number", "Attendance Date", "Status"],
+
+      ...residents.map(person => [
+
+        person.name,
+
+        person.room,
+
+        person.attendanceDate || "",
+
+        person.attendanceDate === today() ? "Present" : "Not checked in today"
+
+      ])
+
+    ];
+
+    const csv = rows.map(row =>
+
+      row.map(value =>
+
+        '"' + String(value).replace(/"/g, '""') + '"'
+
+      ).join(",")
+
+    ).join("\r\n");
+
+    const blob = new Blob(
+
+      ["\uFEFF" + csv],
+
+      { type: "text/csv;charset=utf-8;" }
+
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "hostelhub-attendance-" + today() + ".csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+  });
+
+document.getElementById("clearButton")
+
+  .addEventListener("click", () => {
+
+    if (confirm("This will permanently remove all saved residents. Continue?")) {
+
+      residents = [];
+
+      save();
+
+    }
+
+  });
+
+render();
+
+</script>
+
+</body>
+
+</html>
